@@ -1,0 +1,20 @@
+name: MCLegacy
+version: 1.0
+author: moderator_man
+main: net.mclegacy.plugin.MCLegacy
+depend: [ JettyLib ]
+softdepend: [ dynmap ]
+loadbefore: [ dynmap ]
+commands:
+  ban:
+    description: Issue a global permanent global ban.
+    usage: /ban <username> (reason)
+    permission: mclegacy.ban
+  tempban:
+    description: Issue a temporary global ban.
+    usage: /tempban <username> <duration> (reason)
+    permission: mclegacy.tempban
+  unban:
+    description: Pardon a global ban.
+    usage: /unban <username>
+    permission: mclegacy.unban
