@@ -30,6 +30,7 @@ public class PluginConfig extends Configuration
         generateConfigOption("mclegacy.holderName", "CHANGE ME :D -- This will likely be your server name");
         generateConfigOption("mclegacy.apiKey", "CHANGE ME :D -- Contact MCLegacy for a key");
         generateConfigOption("mclegacy.localBansOnly", false);
+        generateConfigOption("mclegacy.enableLoginPass", true);
         generateConfigOption("mclegacy.info", "Configure integration with MCLegacy servers");
     }
 

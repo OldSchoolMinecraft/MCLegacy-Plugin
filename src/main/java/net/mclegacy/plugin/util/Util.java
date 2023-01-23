@@ -7,6 +7,7 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -14,6 +15,8 @@ import java.util.regex.Pattern;
 
 public class Util
 {
+    private static final SecureRandom rng = new SecureRandom();
+
     public static String generateToken()
     {
         return UUID.randomUUID().toString().replaceAll("-", "");
@@ -175,5 +178,12 @@ public class Util
             }
         }
         return new String(b);
+    }
+
+    public static String generateString(String characters, int length)
+    {
+        char[] text = new char[length];
+        for (int i = 0; i < length; i++) text[i] = characters.charAt(rng.nextInt(characters.length()));
+        return new String(text);
     }
 }

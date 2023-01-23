@@ -52,12 +52,6 @@ public class RemoteWS extends CustomWebSocket
     @Override
     public void onWebSocketText(String message)
     {
-        if (message.startsWith(".sudo"))
-        {
-
-            return;
-        }
-
         Bukkit.getServer().dispatchCommand(new ConsoleCommandSender(Bukkit.getServer()), message);
         adminBroadcast(String.format("%s issued remote server command: %s", getIP(), message));
 

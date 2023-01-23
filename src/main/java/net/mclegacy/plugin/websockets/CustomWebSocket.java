@@ -18,11 +18,11 @@ public class CustomWebSocket extends WebSocketAdapter
 
     protected void closeWithMessage(Session session, int error, String msg)
     {
-        sendString("Connection closed by remote host. Message from server: " + msg);
+        sendString(msg);
         session.close(error, msg);
     }
 
-    protected void sendString(String str)
+    public void sendString(String str)
     {
         try
         {

@@ -2,11 +2,13 @@ package net.mclegacy.plugin;
 
 import com.google.gson.Gson;
 import net.mclegacy.plugin.commands.BanCommands;
+import net.mclegacy.plugin.commands.LoginPassCommands;
 import net.mclegacy.plugin.commands.ws.Sudo;
 import net.mclegacy.plugin.commands.ws.WSCommand;
 import net.mclegacy.plugin.servlets.DynmapConfig;
 import net.mclegacy.plugin.servlets.DynmapWorld;
 import net.mclegacy.plugin.util.*;
+import net.mclegacy.plugin.websockets.AuthWS;
 import net.mclegacy.plugin.websockets.RemoteWS;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,6 +18,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -31,6 +34,7 @@ public class MCLegacy extends JavaPlugin
     private DynmapPlugin dynmapPlugin;
     private BanManager banManager;
     private final BanCommands banCommands = new BanCommands();
+    private final LoginPassCommands loginPassCommands = new LoginPassCommands();
     private AliasMap<String, WSCommand> wsCommands = new AliasMap<>();
 
     public void onLoad()
@@ -62,7 +66,7 @@ public class MCLegacy extends JavaPlugin
 
             ServletContextHandler handler = new ServletContextHandler();
 
-            if (dynmapPlugin != null)
+            /*if (dynmapPlugin != null)
             {
                 String tilesPath = new File("plugins/dynmap/", dynmapPlugin.configuration.getString("tilespath", "web/tiles/")).getAbsolutePath();
                 ServletHolder dynmapHolder = new ServletHolder("dynmap", DefaultServlet.class);
@@ -76,23 +80,19 @@ public class MCLegacy extends JavaPlugin
 
                 System.out.println("MCLegacy has detected that Dynmap is installed.");
                 System.out.println("MCLegacy will serve Dynmap tiles from: " + tilesPath);
-            }
+            }*/
 
-            handler.addServlet(new ServletHolder(new WebSocketServlet()
-            {
-                public void configure(WebSocketServletFactory factory)
-                {
-                    factory.setCreator(((servletUpgradeRequest, servletUpgradeResponse) -> new RemoteWS()));
-                }
-            }), "/remote");
+            //handler.addServlet(new ServletHolder(createWebSocketServlet((servletUpgradeRequest, servletUpgradeResponse) -> new RemoteWS())), "/remote");
+            handler.addServlet(new ServletHolder(createWebSocketServlet((servletUpgradeRequest, servletUpgradeResponse) -> new AuthWS())), "/auth");
 
-            LogInterceptor interceptor = new LogInterceptor(System.out);
-            System.setOut(interceptor);
-            System.setErr(interceptor);
+            //LogInterceptor interceptor = new LogInterceptor(System.out);
+            //System.setOut(interceptor);
+            //System.setErr(interceptor);
 
-            getServer().getScheduler().scheduleAsyncRepeatingTask(this, () -> banManager.tick(), 0, 20 * 5); // 5-second tick timer
+            //getServer().getScheduler().scheduleAsyncRepeatingTask(this, () -> banManager.tick(), 0, 20 * 5); // 5-second tick timer
 
-            banCommands.init(this);
+            //banCommands.init(this);
+            loginPassCommands.init(this);
 
             server.setHandler(handler);
             server.start();
@@ -102,6 +102,17 @@ public class MCLegacy extends JavaPlugin
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    private WebSocketServlet createWebSocketServlet(WebSocketCreator creator)
+    {
+        return new WebSocketServlet()
+        {
+            public void configure(WebSocketServletFactory factory)
+            {
+                factory.setCreator(creator);
+            }
+        };
     }
 
     public void onDisable()
