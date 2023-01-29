@@ -12,9 +12,10 @@ public class OSASHandler implements AuthPluginHandler
         osas = (OSAS) Bukkit.getPluginManager().getPlugin("OSAS");
     }
 
-    public void authenticate(String username, String ip)
+    public void authenticate(String username, String ip) throws AuthHandlerException
     {
-        if (!isInstalled()) return;
+        if (!isInstalled()) throw new AuthHandlerException("OSAS is not installed");
+        if (!osas.fallbackManager.isRegistered(username)) throw new AuthHandlerException("User account is not registered"); // prevent unregistered users from bypassing auth
         osas.fallbackManager.authenticatePlayer(username);
         osas.fallbackManager.unfreezePlayer(username);
     }

@@ -18,11 +18,15 @@ shadowJar {
 
 dependencies {
     implementation files("libs/DynmapRedux.jar")
-    implementation files("libs/JettyLib-all.jar")
     implementation files("libs/poseidon.jar")
     implementation files("libs/OSAS.jar")
     implementation files("libs/AuthMe.jar")
     implementation files("libs/xAuth_AP.jar")
+    implementation 'org.shredzone.acme4j:acme4j:2.15'
+    implementation 'org.eclipse.jetty:jetty-server:9.4.50.v20221201'
+    implementation 'org.eclipse.jetty:jetty-servlet:9.4.50.v20221201'
+    implementation 'org.eclipse.jetty.websocket:websocket-servlet:9.4.50.v20221201'
+    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.50.v20221201'
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.5.0'
     implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '5.0.0-alpha.11'
     implementation 'com.auth0:java-jwt:4.2.1'

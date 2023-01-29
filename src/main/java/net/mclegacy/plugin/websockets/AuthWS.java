@@ -4,12 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.oldschoolminecraft.osas.OSAS;
 import net.mclegacy.plugin.MCLegacy;
+import net.mclegacy.plugin.events.PlayerAuthenticatedEvent;
 import net.mclegacy.plugin.util.Debugger;
 import net.mclegacy.plugin.util.Util;
-import net.mclegacy.plugin.websockets.auth.AuthMeHandler;
-import net.mclegacy.plugin.websockets.auth.AuthPluginHandler;
-import net.mclegacy.plugin.websockets.auth.OSASHandler;
-import net.mclegacy.plugin.websockets.auth.xAuthHandler;
+import net.mclegacy.plugin.websockets.auth.*;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -62,9 +60,8 @@ public class AuthWS extends CustomWebSocket
 
         if (Debugger.isEnabled()) System.out.println("Received authentication request via websocket for " + username + " with code: " + code);
 
-        OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
-                .url("http://mclegacy.local:8080/api/v1/login_pass?username=" + username + "&code=" + code)
+                .url("https://mclegacy.net/api/v1/login_pass?username=" + username + "&code=" + code)
                 .addHeader("X-API-KeyHolder", MCLegacy.instance.getConfig().getString("mclegacy.holderName", "N/A"))
                 .addHeader("X-API-Key", MCLegacy.instance.getConfig().getString("mclegacy.apiKey", "N/A"))
                 .build();
@@ -94,8 +91,22 @@ public class AuthWS extends CustomWebSocket
             }
 
             AuthPluginHandler authPlugin = selectAuthPlugin();
-            authPlugin.authenticate(player.getName(), player.getAddress().getAddress().getHostAddress());
+            try
+            {
+                PlayerAuthenticatedEvent event = new PlayerAuthenticatedEvent(player.getName(), player.getAddress().getAddress().getHostAddress(), authPlugin);
+                Bukkit.getPluginManager().callEvent(event);
+                if (event.isCancelled())
+                {
+                    closeWithMessage(getSession(), 401, "Failed to authenticate: " + event.getCancelReason());
+                    return;
+                }
+                authPlugin.authenticate(player.getName(), player.getAddress().getAddress().getHostAddress());
+            } catch (AuthHandlerException ex) {
+                closeWithMessage(getSession(), 401, "Failed to authenticate: " + ex.getMessage());
+                return;
+            }
 
+            System.out.println("[MCLegacy] Successfully authenticated " + player.getName() + " via websocket");
             player.sendMessage(Util.translateAlternateColorCodes('&', "&aYou have been authenticated via &bMCLegacy&a!"));
             closeWithMessage(getSession(), 200, "OK");
         } catch (Exception e) {

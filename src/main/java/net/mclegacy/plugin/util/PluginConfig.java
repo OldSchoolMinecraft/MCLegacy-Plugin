@@ -23,8 +23,11 @@ public class PluginConfig extends Configuration
 
     private void write()
     {
-        generateConfigOption("plugin.remoteAccessKey", Util.generateToken());
+        generateConfigOption("plugin.remoteAccessKey", Util.randomString(24));
         generateConfigOption("plugin.jettyServerPort", 42069);
+        generateConfigOption("plugin.sslEnabled", false);
+        generateConfigOption("plugin.keystorePassword", Util.randomString(32));
+        generateConfigOption("plugin.sslDomain", "change-me.example.com");
         generateConfigOption("plugin.info", "Configure plugin behavior");
 
         generateConfigOption("mclegacy.holderName", "CHANGE ME :D -- This will likely be your server name");

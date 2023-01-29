@@ -186,4 +186,14 @@ public class Util
         for (int i = 0; i < length; i++) text[i] = characters.charAt(rng.nextInt(characters.length()));
         return new String(text);
     }
+
+    public static String generateSecurePassword()
+    {
+        return generateString("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*<>?", 64);
+    }
+
+    public static String randomString(int len)
+    {
+        return generateString("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", len);
+    }
 }

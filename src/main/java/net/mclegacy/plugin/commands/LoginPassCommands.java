@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import net.mclegacy.plugin.MCLegacy;
 import net.mclegacy.plugin.util.CommandPipe;
 import net.mclegacy.plugin.util.Util;
+import net.minecraft.server.BlockFire;
 import okhttp3.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 public class LoginPassCommands implements CommandExecutor
 {
     private static final Gson gson = new Gson();
+    private OkHttpClient client;
 
     private MCLegacy mcLegacy;
     private HashMap<String, CommandPipe> commands = new HashMap<>();
@@ -36,6 +38,7 @@ public class LoginPassCommands implements CommandExecutor
     public void init(MCLegacy mcLegacy)
     {
         this.mcLegacy = mcLegacy;
+        this.client = mcLegacy.getHttpClient();
         commands.put("link", this::link);
 
         for (String key : commands.keySet())
@@ -56,13 +59,12 @@ public class LoginPassCommands implements CommandExecutor
         {
             String code = args[0];
 
-            OkHttpClient client = new OkHttpClient();
             JsonObject req = new JsonObject();
             req.addProperty("username", sender.getName());
             req.addProperty("code", code);
 
             Request request = new Request.Builder()
-                    .url("http://mclegacy.local:8080/api/v1/linking")
+                    .url("https://mclegacy.net/api/v1/linking")
                     .addHeader("X-API-KeyHolder", MCLegacy.instance.getConfig().getString("mclegacy.holderName", "N/A"))
                     .addHeader("X-API-Key", MCLegacy.instance.getConfig().getString("mclegacy.apiKey", "N/A"))
                     .post(RequestBody.Companion.create(gson.toJson(req), okhttp3.MediaType.parse("application/json")))
@@ -76,6 +78,7 @@ public class LoginPassCommands implements CommandExecutor
                     sender.sendMessage(ChatColor.RED + "An error occurred while linking your account.");
                     return;
                 }
+
                 if (res.get("success").getAsBoolean()) sender.sendMessage(ChatColor.GREEN + "Successfully linked your account!");
                 else sender.sendMessage(ChatColor.RED + "Linking failed: " + res.get("message").getAsString());
             } catch (Exception ex) {

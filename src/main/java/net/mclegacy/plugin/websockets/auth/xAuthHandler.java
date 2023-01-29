@@ -12,9 +12,10 @@ public class xAuthHandler implements AuthPluginHandler
         xauth = (xAuth) Bukkit.getPluginManager().getPlugin("xAuth");
     }
 
-    public void authenticate(String username, String ip)
+    public void authenticate(String username, String ip) throws AuthHandlerException
     {
-        if (!isInstalled()) return;
+        if (!isInstalled()) throw new AuthHandlerException("xAuth is not installed");
+        if (!xauth.isRegistered(username)) throw new AuthHandlerException("User account is not registered"); // prevent unregistered users from bypassing auth
         xauth.login(Bukkit.getPlayer(username));
     }
 

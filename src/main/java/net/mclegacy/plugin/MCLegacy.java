@@ -5,22 +5,11 @@ import net.mclegacy.plugin.commands.BanCommands;
 import net.mclegacy.plugin.commands.LoginPassCommands;
 import net.mclegacy.plugin.commands.ws.Sudo;
 import net.mclegacy.plugin.commands.ws.WSCommand;
-import net.mclegacy.plugin.servlets.DynmapConfig;
-import net.mclegacy.plugin.servlets.DynmapWorld;
 import net.mclegacy.plugin.util.*;
-import net.mclegacy.plugin.websockets.AuthWS;
-import net.mclegacy.plugin.websockets.RemoteWS;
+import okhttp3.OkHttpClient;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.dynmap.DynmapPlugin;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 import java.io.File;
 
@@ -28,33 +17,18 @@ public class MCLegacy extends JavaPlugin
 {
     private static final Gson gson = new Gson();
     public static MCLegacy instance;
-    private Server server;
-    private ServerConnector connector;
+
+    private JettyManager jettyManager;
     private PluginConfig config;
     private DynmapPlugin dynmapPlugin;
     private BanManager banManager;
     private final BanCommands banCommands = new BanCommands();
     private final LoginPassCommands loginPassCommands = new LoginPassCommands();
     private AliasMap<String, WSCommand> wsCommands = new AliasMap<>();
+    private OkHttpClient httpClient;
 
     public void onLoad()
     {
-        instance = this;
-        server = new Server();
-        banManager = new BanManager();
-        connector = new ServerConnector(server);
-        config = new PluginConfig();
-        connector.setPort((Integer) config.getConfigOption("plugin.jettyServerPort", 42069));
-        server.addConnector(connector);
-
-        wsCommands.put("sudo", new Sudo());
-
-        getDataFolder().mkdirs();
-        new File(getDataFolder(), "bans").mkdirs();
-        new File(getDataFolder(), "queue").mkdirs();
-
-        handleDependencies();
-
         System.out.println("[MCLegacy] Finished loading");
     }
 
@@ -62,28 +36,31 @@ public class MCLegacy extends JavaPlugin
     {
         try
         {
-            if (!getDataFolder().exists()) getDataFolder().mkdirs();
+            instance = this;
+            banManager = new BanManager();
+            config = new PluginConfig();
 
-            ServletContextHandler handler = new ServletContextHandler();
+            wsCommands.put("sudo", new Sudo());
 
-            /*if (dynmapPlugin != null)
+            getDataFolder().mkdirs();
+            new File(getDataFolder(), "bans").mkdirs();
+            new File(getDataFolder(), "queue").mkdirs();
+
+            handleDependencies();
+
+            httpClient = new OkHttpClient();
+
+            getServer().getScheduler().scheduleSyncDelayedTask(this, () ->
             {
-                String tilesPath = new File("plugins/dynmap/", dynmapPlugin.configuration.getString("tilespath", "web/tiles/")).getAbsolutePath();
-                ServletHolder dynmapHolder = new ServletHolder("dynmap", DefaultServlet.class);
-                dynmapHolder.setInitParameter("resourceBase", tilesPath);
-                dynmapHolder.setInitParameter("dirAllowed", "true");
-                dynmapHolder.setInitParameter("pathInfoOnly", "true");
-                handler.addServlet(dynmapHolder, "/dynmap_tiles/*");
-
-                handler.addServlet(DynmapConfig.class, "/dmap_config");
-                handler.addServlet(DynmapWorld.class, "/dmap_world");
-
-                System.out.println("MCLegacy has detected that Dynmap is installed.");
-                System.out.println("MCLegacy will serve Dynmap tiles from: " + tilesPath);
-            }*/
-
-            //handler.addServlet(new ServletHolder(createWebSocketServlet((servletUpgradeRequest, servletUpgradeResponse) -> new RemoteWS())), "/remote");
-            handler.addServlet(new ServletHolder(createWebSocketServlet((servletUpgradeRequest, servletUpgradeResponse) -> new AuthWS())), "/auth");
+                try
+                {
+                    jettyManager = new JettyManager();
+                    jettyManager.init(this);
+                } catch (Exception ex) {
+                    System.out.println("[MCLegacy] Failed to start Jetty server");
+                    ex.printStackTrace();
+                }
+            }, 5L);
 
             //LogInterceptor interceptor = new LogInterceptor(System.out);
             //System.setOut(interceptor);
@@ -94,9 +71,6 @@ public class MCLegacy extends JavaPlugin
             //banCommands.init(this);
             loginPassCommands.init(this);
 
-            server.setHandler(handler);
-            server.start();
-
             if (Debugger.isEnabled()) System.out.println("[MCLegacy Debugger] Enabled");
             else System.out.println("[MCLegacy] Enabled");
         } catch (Exception ex) {
@@ -104,23 +78,12 @@ public class MCLegacy extends JavaPlugin
         }
     }
 
-    private WebSocketServlet createWebSocketServlet(WebSocketCreator creator)
-    {
-        return new WebSocketServlet()
-        {
-            public void configure(WebSocketServletFactory factory)
-            {
-                factory.setCreator(creator);
-            }
-        };
-    }
-
     public void onDisable()
     {
         try
         {
             System.out.println("[MCLegacy] Stopping Jetty server...");
-            server.stop();
+            jettyManager.shutdown();
             System.out.println("[MCLegacy] Jetty stopped. Plugin disabled.");
         } catch (Exception ignored) {}
     }
@@ -131,7 +94,7 @@ public class MCLegacy extends JavaPlugin
         {
             if (getServer().getPluginManager().getPlugin("dynmap") == null)
             {
-                File file = new File("plugins", (String) config.getConfigOption("dependencies.dynmapFileName", "DynmapRedux.jar"));
+                File file = new File("plugins", (String) config.getConfigOption("dependencies.dynmap", "dynmap.jar"));
                 if (file.exists())
                 {
                     Plugin plugin = getServer().getPluginManager().loadPlugin(file);
@@ -139,35 +102,9 @@ public class MCLegacy extends JavaPlugin
                     dynmapPlugin = (DynmapPlugin) plugin;
                 } else System.out.println("[MCLegacy] Missing soft dependency: " + file.getName());
             }
-
-            if (getServer().getPluginManager().getPlugin("JettyLib") == null)
-            {
-                File file = new File("plugins", (String) config.getConfigOption("dependencies.jettylibFileName", "JettyLib-all.jar"));
-                if (!file.exists())
-                {
-                    System.out.println("[MCLegacy] Missing required dependency: " + file.getName());
-                    getServer().getPluginManager().disablePlugin(this);
-                    return;
-                }
-                Plugin plugin = getServer().getPluginManager().loadPlugin(file);
-                getServer().getPluginManager().enablePlugin(plugin);
-            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-    }
-
-    private DynmapPlugin getDynmapPlugin()
-    {
-        DynmapPlugin dynmapPlugin = (DynmapPlugin) getServer().getPluginManager().getPlugin("dynmap");
-        if (dynmapPlugin != null) return dynmapPlugin;
-        try
-        {
-            //TODO: This is a hacky way to get the DynmapPlugin instance. Find a better way and/or make dynmapFile a config option
-            String dynmapFile = System.getenv().containsKey("dynmapFile") ? System.getenv("dynmapFile") : "plugins/DynmapRedux.jar";
-            dynmapPlugin = (DynmapPlugin) getServer().getPluginManager().loadPlugin(new File(dynmapFile));
-            return dynmapPlugin;
-        } catch (Exception ignored) { return null; }
     }
 
     public PluginConfig getConfig()
@@ -183,5 +120,10 @@ public class MCLegacy extends JavaPlugin
     public BanManager getBanManager()
     {
         return banManager;
+    }
+
+    public OkHttpClient getHttpClient()
+    {
+        return httpClient;
     }
 }

@@ -1,5 +1,7 @@
 package net.mclegacy.plugin.websockets;
 
+import net.mclegacy.plugin.MCLegacy;
+import okhttp3.OkHttpClient;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -11,6 +13,8 @@ import java.nio.ByteBuffer;
 
 public class CustomWebSocket extends WebSocketAdapter
 {
+    protected static final OkHttpClient client = MCLegacy.instance.getHttpClient();
+
     protected String getIP()
     {
         return getSession().getRemoteAddress().getAddress().getHostAddress();
