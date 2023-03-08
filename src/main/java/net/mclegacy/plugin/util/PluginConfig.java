@@ -30,11 +30,23 @@ public class PluginConfig extends Configuration
         generateConfigOption("plugin.sslDomain", "change-me.example.com");
         generateConfigOption("plugin.info", "Configure plugin behavior");
 
+        generateConfigOption("plugin.dataSource.type", "mysql");
+        generateConfigOption("plugin.dataSource.mysql.host", "localhost");
+        generateConfigOption("plugin.dataSource.mysql.port", 3306);
+        generateConfigOption("plugin.dataSource.mysql.database", "mclegacy");
+        generateConfigOption("plugin.dataSource.mysql.username", "mclegacy");
+        generateConfigOption("plugin.dataSource.mysql.password", "mclegacy");
+        generateConfigOption("plugin.dataSource.file.storageDir", "plugins/MCLegacy/");
+        generateConfigOption("plugin.dataSource.info", "Configure plugin data source");
+
         generateConfigOption("mclegacy.holderName", "CHANGE ME :D -- This will likely be your server name");
         generateConfigOption("mclegacy.apiKey", "CHANGE ME :D -- Contact MCLegacy for a key");
         generateConfigOption("mclegacy.localBansOnly", false);
         generateConfigOption("mclegacy.enableLoginPass", true);
         generateConfigOption("mclegacy.info", "Configure integration with MCLegacy servers");
+
+        generateConfigOption("mclegacy.market.enabled", false);
+        generateConfigOption("mclegacy.market.info", "Configure options for MCLegacy market");
     }
 
     private void generateConfigOption(String key, Object defaultValue)

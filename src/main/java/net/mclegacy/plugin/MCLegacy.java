@@ -3,8 +3,12 @@ package net.mclegacy.plugin;
 import com.google.gson.Gson;
 import net.mclegacy.plugin.commands.BanCommands;
 import net.mclegacy.plugin.commands.LoginPassCommands;
+import net.mclegacy.plugin.commands.MiscCommands;
 import net.mclegacy.plugin.commands.ws.Sudo;
 import net.mclegacy.plugin.commands.ws.WSCommand;
+import net.mclegacy.plugin.data.AbstractDataSource;
+import net.mclegacy.plugin.data.FileDataSource;
+import net.mclegacy.plugin.data.MySQLDataSource;
 import net.mclegacy.plugin.util.*;
 import okhttp3.OkHttpClient;
 import org.bukkit.plugin.Plugin;
@@ -24,8 +28,11 @@ public class MCLegacy extends JavaPlugin
     private BanManager banManager;
     private final BanCommands banCommands = new BanCommands();
     private final LoginPassCommands loginPassCommands = new LoginPassCommands();
+    private final MiscCommands miscCommands = new MiscCommands();
     private AliasMap<String, WSCommand> wsCommands = new AliasMap<>();
     private OkHttpClient httpClient;
+    private MySQLConnectionPool connectionPool;
+    private AbstractDataSource dataSource;
 
     public void onLoad()
     {
@@ -37,8 +44,24 @@ public class MCLegacy extends JavaPlugin
         try
         {
             instance = this;
-            banManager = new BanManager();
             config = new PluginConfig();
+
+            if (config.getString("plugin.dataSource.type", "mysql").equalsIgnoreCase("mysql"))
+            {
+                String host = config.getString("plugin.dataSource.mysql.host", "localhost");
+                String port = config.getString("plugin.dataSource.mysql.port", "3306");
+                String database = config.getString("plugin.dataSource.mysql.database", "mclegacy");
+                String username = config.getString("plugin.dataSource.mysql.username", "mclegacy");
+                String password = config.getString("plugin.dataSource.mysql.password", "mclegacy");
+                connectionPool = new MySQLConnectionPool(String.format("jdbc:mysql://%s:%s/%s", host, port, database), username, password);
+                dataSource = new MySQLDataSource(connectionPool);
+            } else if (config.getString("plugin.dataSource.type", "mysql").equalsIgnoreCase("file")) {
+                dataSource = new FileDataSource(new File(config.getString("plugin.dataSource.file.storageDir")));
+            } else {
+                System.out.println("[MCLegacy] Invalid data source type");
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
 
             wsCommands.put("sudo", new Sudo());
 
@@ -70,6 +93,7 @@ public class MCLegacy extends JavaPlugin
 
             //banCommands.init(this);
             loginPassCommands.init(this);
+            miscCommands.init(this);
 
             if (Debugger.isEnabled()) System.out.println("[MCLegacy Debugger] Enabled");
             else System.out.println("[MCLegacy] Enabled");
@@ -120,6 +144,11 @@ public class MCLegacy extends JavaPlugin
     public BanManager getBanManager()
     {
         return banManager;
+    }
+
+    public MySQLConnectionPool getSQLPool()
+    {
+        return connectionPool;
     }
 
     public OkHttpClient getHttpClient()

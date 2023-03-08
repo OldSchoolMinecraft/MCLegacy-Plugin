@@ -61,7 +61,7 @@ public class JettyManager
 
         SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
         ServerConnector sslConnector = new ServerConnector(server, tls, http11);
-        sslConnector.setPort(mcLegacy.getConfig().getInt("plugin.jettyServerPort", 69420));
+        sslConnector.setPort(mcLegacy.getConfig().getInt("plugin.jettyServerPort", 42069));
 
         if (mcLegacy.getConfig().getBoolean("plugin.sslEnabled", false) && new File("plugins/MCLegacy/keystore.p12").exists())
             server.addConnector(sslConnector);

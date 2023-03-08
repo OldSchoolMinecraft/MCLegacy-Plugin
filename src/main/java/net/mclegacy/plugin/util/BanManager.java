@@ -2,6 +2,7 @@ package net.mclegacy.plugin.util;
 
 import com.google.gson.Gson;
 import net.mclegacy.plugin.MCLegacy;
+import net.mclegacy.plugin.data.BanHolder;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -59,7 +60,7 @@ public class BanManager
 
     public void banPlayer(String username, String reason, long expiration, String issued_by)
     {
-        banHolderQueue.add(new BanHolder(username, reason, String.valueOf(expiration), issued_by, String.valueOf(System.currentTimeMillis() / 1000L)));
+        banHolderQueue.add(new BanHolder(null, username, reason, String.valueOf(expiration), issued_by, String.valueOf(System.currentTimeMillis() / 1000L)));
     }
 
     public boolean unbanPlayer(String username)
