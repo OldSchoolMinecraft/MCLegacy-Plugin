@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class AuthWS extends CustomWebSocket
 {
-    public static final List<AuthPluginHandler> SUPPORTED_HANDLERS = Arrays.asList(new OSASHandler(), new AuthMeHandler(), new xAuthHandler());
-
     @Override
     public void onWebSocketText(String message)
     {
@@ -117,7 +115,7 @@ public class AuthWS extends CustomWebSocket
 
     private AuthPluginHandler selectAuthPlugin()
     {
-        return SUPPORTED_HANDLERS.stream()
+        return MCLegacy.SUPPORTED_AUTH_HANDLERS.stream()
                 .filter(AuthPluginHandler::isInstalled)
                 .reduce((first, second) -> {
                     throw new RuntimeException("Multiple auth plugins are installed. Please remove one of them.");

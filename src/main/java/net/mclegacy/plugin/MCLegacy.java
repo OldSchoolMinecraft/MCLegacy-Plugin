@@ -12,6 +12,10 @@ import net.mclegacy.plugin.data.LocalDataSource;
 import net.mclegacy.plugin.data.RemoteDataSource;
 import net.mclegacy.plugin.discord.Bot;
 import net.mclegacy.plugin.util.*;
+import net.mclegacy.plugin.websockets.auth.AuthMeHandler;
+import net.mclegacy.plugin.websockets.auth.AuthPluginHandler;
+import net.mclegacy.plugin.websockets.auth.OSASHandler;
+import net.mclegacy.plugin.websockets.auth.xAuthHandler;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import org.bukkit.entity.Player;
@@ -21,9 +25,13 @@ import org.dynmap.DynmapPlugin;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MCLegacy extends JavaPlugin
 {
+    public static final List<AuthPluginHandler> SUPPORTED_AUTH_HANDLERS = Arrays.asList(new OSASHandler(), new AuthMeHandler(), new xAuthHandler());
+
     private static final Gson gson = new Gson();
     public static MCLegacy instance;
 
