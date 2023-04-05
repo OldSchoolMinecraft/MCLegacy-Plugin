@@ -14,6 +14,7 @@ shadowJar {
     exclude("OSAS.jar")
     exclude("AuthMe.jar")
     exclude("xAuth_AP.jar")
+    exclude("Discord-Bot-Core.jar")
 }
 
 dependencies {
@@ -22,6 +23,7 @@ dependencies {
     implementation files("libs/OSAS.jar")
     implementation files("libs/AuthMe.jar")
     implementation files("libs/xAuth_AP.jar")
+    implementation files("libs/Discord-Bot-Core.jar")
     implementation 'org.shredzone.acme4j:acme4j:2.15'
     implementation 'org.eclipse.jetty:jetty-server:9.4.50.v20221201'
     implementation 'org.eclipse.jetty:jetty-servlet:9.4.50.v20221201'

@@ -3,6 +3,7 @@ package net.mclegacy.plugin.commands;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import net.mclegacy.plugin.MCLegacy;
+import net.mclegacy.plugin.discord.Bot;
 import net.mclegacy.plugin.util.CommandPipe;
 import net.mclegacy.plugin.util.Util;
 import okhttp3.OkHttpClient;
@@ -21,10 +22,9 @@ import java.util.HashMap;
 public class MiscCommands implements CommandExecutor
 {
     private static final Gson gson = new Gson();
-    private OkHttpClient client;
 
     private MCLegacy mcLegacy;
-    private HashMap<String, CommandPipe> commands = new HashMap<>();
+    private final HashMap<String, CommandPipe> commands = new HashMap<>();
 
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] args)
@@ -38,8 +38,9 @@ public class MiscCommands implements CommandExecutor
     public void init(MCLegacy mcLegacy)
     {
         this.mcLegacy = mcLegacy;
-        this.client = mcLegacy.getHttpClient();
+        OkHttpClient client = mcLegacy.getHttpClient();
         commands.put("mclr", this::reload);
+        commands.put("dlink", this::dlink);
 
         for (String key : commands.keySet())
             mcLegacy.getCommand(key).setExecutor(this);
@@ -52,6 +53,21 @@ public class MiscCommands implements CommandExecutor
         mcLegacy.getConfig().reload();
 
         sender.sendMessage(Util.translateAlternateColorCodes('&', "&aReloaded config!"));
+    }
+
+    private void dlink(CommandSender sender, String[] args)
+    {
+        if (!handlePermissions(sender, "mclegacy.dlink")) return;
+
+        String linkCode = args[0];
+        if (Bot.LINK_REQUESTS.containsKey(linkCode))
+        {
+            mcLegacy.getDataSource().linkDiscordAccount(Bot.LINK_REQUESTS.get(linkCode), sender.getName());
+            Bot.LINK_REQUESTS.remove(linkCode);
+            sender.sendMessage(Util.translateAlternateColorCodes('&', "&aSuccessfully linked your Discord account!"));
+        } else {
+            sender.sendMessage(Util.translateAlternateColorCodes('&', "&cInvalid link code!"));
+        }
     }
 
     private boolean handlePermissions(CommandSender sender, String permission)

@@ -1,21 +1,26 @@
 package net.mclegacy.plugin;
 
 import com.google.gson.Gson;
+import com.johnymuffin.discordcore.DiscordCore;
 import net.mclegacy.plugin.commands.BanCommands;
 import net.mclegacy.plugin.commands.LoginPassCommands;
 import net.mclegacy.plugin.commands.MiscCommands;
 import net.mclegacy.plugin.commands.ws.Sudo;
 import net.mclegacy.plugin.commands.ws.WSCommand;
 import net.mclegacy.plugin.data.AbstractDataSource;
-import net.mclegacy.plugin.data.FileDataSource;
-import net.mclegacy.plugin.data.MySQLDataSource;
+import net.mclegacy.plugin.data.LocalDataSource;
+import net.mclegacy.plugin.data.RemoteDataSource;
+import net.mclegacy.plugin.discord.Bot;
 import net.mclegacy.plugin.util.*;
 import okhttp3.OkHttpClient;
+import okhttp3.Response;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.dynmap.DynmapPlugin;
 
 import java.io.File;
+import java.util.ArrayList;
 
 public class MCLegacy extends JavaPlugin
 {
@@ -33,6 +38,7 @@ public class MCLegacy extends JavaPlugin
     private OkHttpClient httpClient;
     private MySQLConnectionPool connectionPool;
     private AbstractDataSource dataSource;
+    private Bot bot;
 
     public void onLoad()
     {
@@ -54,13 +60,19 @@ public class MCLegacy extends JavaPlugin
                 String username = config.getString("plugin.dataSource.mysql.username", "mclegacy");
                 String password = config.getString("plugin.dataSource.mysql.password", "mclegacy");
                 connectionPool = new MySQLConnectionPool(String.format("jdbc:mysql://%s:%s/%s", host, port, database), username, password);
-                dataSource = new MySQLDataSource(connectionPool);
+                dataSource = new RemoteDataSource(connectionPool);
             } else if (config.getString("plugin.dataSource.type", "mysql").equalsIgnoreCase("file")) {
-                dataSource = new FileDataSource(new File(config.getString("plugin.dataSource.file.storageDir")));
+                dataSource = new LocalDataSource(new File(config.getString("plugin.dataSource.file.storageDir", getDataFolder().getAbsolutePath())));
             } else {
                 System.out.println("[MCLegacy] Invalid data source type");
                 getServer().getPluginManager().disablePlugin(this);
                 return;
+            }
+
+            if (config.getBoolean("plugin.enableDiscordLinking", false))
+            {
+                bot = new Bot((DiscordCore) getServer().getPluginManager().getPlugin("DiscordCore"), dataSource);
+                bot.init();
             }
 
             wsCommands.put("sudo", new Sudo());
@@ -85,6 +97,8 @@ public class MCLegacy extends JavaPlugin
                 }
             }, 5L);
 
+            getServer().getScheduler().scheduleAsyncRepeatingTask(this, this::sendServerPing, 0, 20 * 60); // 1-minute tick timer
+
             //LogInterceptor interceptor = new LogInterceptor(System.out);
             //System.setOut(interceptor);
             //System.setErr(interceptor);
@@ -100,6 +114,34 @@ public class MCLegacy extends JavaPlugin
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    private void sendServerPing()
+    {
+        ArrayList<String> players = new ArrayList<>();
+        for (Player player : getServer().getOnlinePlayers())
+            players.add(player.getName());
+        String payload = gson.toJson(new ServerPing(getServer().getServerName(), getWebsocketURL(), players));
+
+        try
+        {
+            try (Response response = httpClient.newCall(new okhttp3.Request.Builder()
+                    .url("https://mclegacy.net/api/ping")
+                    .post(okhttp3.RequestBody.create(okhttp3.MediaType.parse("application/json"), payload))
+                    .build()).execute()) {}
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private String getWebsocketURL()
+    {
+        String protocol = "ws://";
+        if (config.getBoolean("jetty.sslEnabled", false))
+            protocol = "wss://";
+        String host = config.getString("jetty.host", getServer().getIp());
+        int port = config.getInt("plugin.jettyServerPort", 42069);
+        return protocol + host + ":" + port;
     }
 
     public void onDisable()
@@ -154,5 +196,10 @@ public class MCLegacy extends JavaPlugin
     public OkHttpClient getHttpClient()
     {
         return httpClient;
+    }
+
+    public AbstractDataSource getDataSource()
+    {
+        return dataSource;
     }
 }

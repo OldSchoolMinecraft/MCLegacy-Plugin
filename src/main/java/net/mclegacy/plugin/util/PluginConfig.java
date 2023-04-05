@@ -29,6 +29,7 @@ public class PluginConfig extends Configuration
         generateConfigOption("plugin.keystorePassword", Util.randomString(32));
         generateConfigOption("plugin.sslDomain", "change-me.example.com");
         generateConfigOption("plugin.info", "Configure plugin behavior");
+        generateConfigOption("plugin.enableDiscordLinking", false);
 
         generateConfigOption("plugin.dataSource.type", "mysql");
         generateConfigOption("plugin.dataSource.mysql.host", "localhost");
