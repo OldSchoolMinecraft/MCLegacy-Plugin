@@ -20,6 +20,12 @@ public class OSASHandler implements AuthPluginHandler
         osas.fallbackManager.unfreezePlayer(username);
     }
 
+    public void deleteAccount(String username) throws AuthHandlerException
+    {
+        if (!isInstalled()) throw new AuthHandlerException("OSAS is not installed");
+        osas.fallbackManager.deleteAccount(username);
+    }
+
     public boolean isInstalled()
     {
         return osas != null;
