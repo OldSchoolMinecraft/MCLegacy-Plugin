@@ -48,6 +48,22 @@ public class Bot extends ListenerAdapter
             LINK_REQUESTS.put(code, event.getAuthor().getId());
             event.getMessage().reply("Your link code is: `" + code + "`. Login to the server, and run `/dlink " + code + "` to complete the linking process.").queue();
         }
+
+        if (parts[0].equalsIgnoreCase("!reset"))
+        {
+            if (parts.length != 2)
+            {
+                event.getMessage().reply("Usage: !reset <minecraft username>").queue();
+                return;
+            }
+            String username = parts[1];
+            if (!dataSource.isDiscordAccountLinked(username))
+            {
+                event.getMessage().reply("That player is not linked!").queue();
+                return;
+            }
+            //
+        }
     }
 
     private String generateCode()
