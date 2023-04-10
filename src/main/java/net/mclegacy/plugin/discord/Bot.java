@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.mclegacy.plugin.MCLegacy;
 import net.mclegacy.plugin.data.AbstractDataSource;
+import net.mclegacy.plugin.data.RemoteDataSource;
 import net.mclegacy.plugin.websockets.auth.AuthHandlerException;
 import net.mclegacy.plugin.websockets.auth.AuthPluginHandler;
 
@@ -18,11 +19,14 @@ public class Bot extends ListenerAdapter
 
     private DiscordCore dCore;
     private AbstractDataSource dataSource;
+    private boolean usingMySQL;
 
     public Bot(DiscordCore dCore, AbstractDataSource dataSource)
     {
         this.dCore = dCore;
         this.dataSource = dataSource;
+
+        usingMySQL = (dataSource instanceof RemoteDataSource);
     }
 
     public void init()
@@ -54,30 +58,49 @@ public class Bot extends ListenerAdapter
 
         if (parts[0].equalsIgnoreCase("!reset"))
         {
-            if (parts.length != 2)
+            if (usingMySQL)
             {
-                event.getMessage().reply("Usage: !reset <minecraft username>").queue();
-                return;
-            }
-            String username = parts[1];
-            if (!dataSource.isDiscordAccountLinked(username))
-            {
-                event.getMessage().reply("That player is not linked!").queue();
-                return;
-            }
-            LinkData data = dataSource.getDiscordLinkData(username);
-            if (!data.discordID.equals(event.getAuthor().getId()))
-            {
-                event.getMessage().reply("You are not the owner of that account!").queue();
-                return;
-            }
-            AuthPluginHandler authPluginHandler = selectAuthPlugin();
-            try
-            {
-                authPluginHandler.deleteAccount(username);
-                event.getMessage().reply("Your password has been reset successfully. Please connect to the server & re-register your account as soon as possible.").queue();
-            } catch (AuthHandlerException e) {
-                event.getMessage().reply("Error: `" + e.getMessage() + "`").queue();
+                LinkData data = ((RemoteDataSource) dataSource).loadDiscordLinkDataByID(event.getAuthor().getId());
+                if (data == null)
+                {
+                    event.getMessage().reply("You are not linked to any accounts!").queue();
+                    return;
+                }
+
+                AuthPluginHandler authPluginHandler = selectAuthPlugin();
+                try
+                {
+                    authPluginHandler.deleteAccount(data.username);
+                    event.getMessage().reply("Your password has been reset successfully. Please connect to the server & re-register your account as soon as possible.").queue();
+                } catch (AuthHandlerException e) {
+                    event.getMessage().reply("Error: `" + e.getMessage() + "`").queue();
+                }
+            } else {
+                if (parts.length != 2)
+                {
+                    event.getMessage().reply("Usage: !reset <minecraft username>").queue();
+                    return;
+                }
+                String username = parts[1];
+                if (!dataSource.isDiscordAccountLinked(username))
+                {
+                    event.getMessage().reply("That player is not linked!").queue();
+                    return;
+                }
+                LinkData data = dataSource.getDiscordLinkData(username);
+                if (!data.discordID.equals(event.getAuthor().getId()))
+                {
+                    event.getMessage().reply("You are not the owner of that account!").queue();
+                    return;
+                }
+                AuthPluginHandler authPluginHandler = selectAuthPlugin();
+                try
+                {
+                    authPluginHandler.deleteAccount(username);
+                    event.getMessage().reply("Your password has been reset successfully. Please connect to the server & re-register your account as soon as possible.").queue();
+                } catch (AuthHandlerException e) {
+                    event.getMessage().reply("Error: `" + e.getMessage() + "`").queue();
+                }
             }
         }
     }

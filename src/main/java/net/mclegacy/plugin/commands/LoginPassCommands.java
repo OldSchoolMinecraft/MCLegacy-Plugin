@@ -67,7 +67,7 @@ public class LoginPassCommands implements CommandExecutor
                     .url("https://mclegacy.net/api/v1/linking")
                     .addHeader("X-API-KeyHolder", MCLegacy.instance.getConfig().getString("mclegacy.holderName", "N/A"))
                     .addHeader("X-API-Key", MCLegacy.instance.getConfig().getString("mclegacy.apiKey", "N/A"))
-                    .post(RequestBody.Companion.create(gson.toJson(req), okhttp3.MediaType.parse("application/json")))
+                    .post(RequestBody.create(okhttp3.MediaType.parse("application/json"), gson.toJson(req)))
                     .build();
 
             try (Response response = client.newCall(request).execute())

@@ -80,6 +80,22 @@ public class RemoteDataSource extends AbstractDataSource
         }
     }
 
+    public LinkData loadDiscordLinkDataByID(String discordID)
+    {
+        try (PreparedStatement stmt = connectionPool.getConnection().prepareStatement("SELECT * FROM link_data WHERE discordID = ?"))
+        {
+            stmt.setString(1, discordID);
+            stmt.executeQuery();
+            ResultSet rs = stmt.getResultSet();
+            if (rs.next())
+                return new LinkData(rs.getString("discordID"), rs.getString("username"), rs.getLong("linkTime"));
+            return null;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
     @Override
     public void linkDiscordAccount(String username, String discordID)
     {
